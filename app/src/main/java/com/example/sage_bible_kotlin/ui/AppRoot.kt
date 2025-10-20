@@ -20,6 +20,7 @@ import com.example.sage_bible_kotlin.ui.placeholders.AiScreen
 import com.example.sage_bible_kotlin.ui.placeholders.ProfileScreen
 import com.example.sage_bible_kotlin.ui.placeholders.SearchScreen
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.ImportContacts
 import androidx.compose.material.icons.filled.Home
 import androidx.compose.material.icons.filled.Person
 import androidx.compose.material.icons.filled.Search
@@ -29,9 +30,11 @@ import androidx.navigation.navArgument
 import java.net.URLDecoder
 import java.net.URLEncoder
 import com.example.sage_bible_kotlin.ui.reader.ReaderScreen
+import com.example.sage_bible_kotlin.ui.feed.FeedScreen
 
 object Routes {
-    const val Home = "home"
+    const val Bible = "bible"
+    const val Feed = "feed"
     const val Search = "search"
     const val Ai = "ai"
     const val Profile = "profile"
@@ -46,7 +49,8 @@ data class BottomItem(val route: String, val label: String, val icon: ImageVecto
 fun AppRoot() {
     val navController = rememberNavController()
     val items = listOf(
-        BottomItem(Routes.Home, "Home", Icons.Filled.Home),
+        BottomItem(Routes.Bible, "Bible", Icons.Filled.ImportContacts),
+        BottomItem(Routes.Feed, "Home", Icons.Filled.Home),
         BottomItem(Routes.Search, "Search", Icons.Filled.Search),
         BottomItem(Routes.Ai, "AI", Icons.Filled.SmartToy),
         BottomItem(Routes.Profile, "Profile", Icons.Filled.Person),
@@ -76,14 +80,15 @@ fun AppRoot() {
     ) { inner ->
         NavHost(
             navController = navController,
-            startDestination = Routes.Home,
+            startDestination = Routes.Bible,
             modifier = Modifier
         ) {
-            composable(Routes.Home) {
+            composable(Routes.Bible) {
                 HomeScreen(padding = inner) { translation, book, chapter ->
                     navController.navigate(Routes.readerOf(translation, book, chapter))
                 }
             }
+            composable(Routes.Feed) { FeedScreen(padding = inner) }
             composable(Routes.Search) { SearchScreen(padding = inner) }
             composable(Routes.Ai) { AiScreen(padding = inner) }
             composable(Routes.Profile) { ProfileScreen(padding = inner) }
