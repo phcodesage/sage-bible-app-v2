@@ -16,6 +16,7 @@ import androidx.navigation.compose.composable
 import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
 import com.example.sage_bible_kotlin.ui.home.HomeScreen
+import androidx.compose.runtime.LaunchedEffect
 import com.example.sage_bible_kotlin.ui.placeholders.AiScreen
 import com.example.sage_bible_kotlin.ui.placeholders.ProfileScreen
 import com.example.sage_bible_kotlin.ui.placeholders.SearchScreen
@@ -31,8 +32,10 @@ import java.net.URLDecoder
 import java.net.URLEncoder
 import com.example.sage_bible_kotlin.ui.reader.ReaderScreen
 import com.example.sage_bible_kotlin.ui.feed.FeedScreen
+import com.example.sage_bible_kotlin.ui.splash.SplashScreen
 
 object Routes {
+    const val Splash = "splash"
     const val Bible = "bible"
     const val Feed = "feed"
     const val Search = "search"
@@ -80,9 +83,17 @@ fun AppRoot() {
     ) { inner ->
         NavHost(
             navController = navController,
-            startDestination = Routes.Bible,
+            startDestination = Routes.Splash,
             modifier = Modifier
         ) {
+            composable(Routes.Splash) {
+                SplashScreen(padding = inner)
+                LaunchedEffect(Unit) {
+                    navController.navigate(Routes.readerOf("KJV", "Genesis", 1)) {
+                        popUpTo(Routes.Splash) { inclusive = true }
+                    }
+                }
+            }
             composable(Routes.Bible) {
                 HomeScreen(padding = inner) { translation, book, chapter ->
                     navController.navigate(Routes.readerOf(translation, book, chapter))

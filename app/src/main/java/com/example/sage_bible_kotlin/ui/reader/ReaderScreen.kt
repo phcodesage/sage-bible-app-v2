@@ -3,6 +3,7 @@ package com.example.sage_bible_kotlin.ui.reader
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
@@ -18,6 +19,7 @@ import androidx.compose.material.icons.filled.Tune
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.material3.Button
 import androidx.compose.material3.TextField
@@ -37,6 +39,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontStyle
 import androidx.compose.ui.text.style.TextAlign
@@ -62,9 +65,12 @@ fun ReaderScreen(
     var currentBook by remember { mutableStateOf(book) }
     var currentChapter by remember { mutableStateOf(chapter) }
     var showPicker by remember { mutableStateOf(false) }
+    var isLoading by remember { mutableStateOf(false) }
 
     LaunchedEffect(currentTranslation) {
+        isLoading = true
         bibleData = try { withContext(Dispatchers.IO) { repo.loadTranslation(currentTranslation) } } catch (_: Throwable) { null }
+        isLoading = false
     }
 
     val chapterContent = remember(bibleData, currentBook, currentChapter) {
@@ -131,7 +137,11 @@ fun ReaderScreen(
                 textAlign = TextAlign.Center
             )
 
-            if (chapterContent == null) {
+            if (isLoading || bibleData == null) {
+                Box(modifier = Modifier.fillMaxSize()) {
+                    CircularProgressIndicator(modifier = Modifier.align(Alignment.Center))
+                }
+            } else if (chapterContent == null) {
                 Text(
                     text = "Unable to load content.",
                     style = MaterialTheme.typography.bodyLarge,
@@ -144,7 +154,13 @@ fun ReaderScreen(
                     verticalArrangement = Arrangement.spacedBy(8.dp)
                 ) {
                     items(chapterContent.verses) { v ->
-                        VerseRow(number = v.verse, text = v.text)
+                        VerseInteractiveRow(
+                            number = v.verse,
+                            text = v.text,
+                            book = currentBook,
+                            chapter = currentChapter,
+                            translationLabel = currentTranslation.label
+                        )
                     }
                 }
             }
