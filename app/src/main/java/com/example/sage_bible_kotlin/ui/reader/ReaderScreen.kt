@@ -12,10 +12,8 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.ChevronLeft
 import androidx.compose.material.icons.filled.ChevronRight
-import androidx.compose.material.icons.filled.FormatSize
 import androidx.compose.material.icons.filled.Tune
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
@@ -54,8 +52,7 @@ fun ReaderScreen(
     translation: String,
     book: String,
     chapter: Int,
-    padding: PaddingValues,
-    onBack: () -> Unit = {}
+    padding: PaddingValues
 ) {
     val context = LocalContext.current
     val repo = remember { BibleRepository(context) }
@@ -93,11 +90,6 @@ fun ReaderScreen(
                         style = MaterialTheme.typography.titleMedium
                     )
                 },
-                navigationIcon = {
-                    IconButton(onClick = onBack) {
-                        Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Back")
-                    }
-                },
                 actions = {
                     IconButton(onClick = { showPicker = true }) {
                         Icon(Icons.Filled.Tune, contentDescription = "Go to")
@@ -120,9 +112,6 @@ fun ReaderScreen(
                             }
                         }
                     ) { Icon(Icons.Filled.ChevronRight, contentDescription = "Next Chapter") }
-                    IconButton(onClick = { /* Text size dialog */ }) {
-                        Icon(Icons.Filled.FormatSize, contentDescription = "Text Size")
-                    }
                 }
             )
         }

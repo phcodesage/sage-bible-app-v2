@@ -107,8 +107,7 @@ fun AppRoot() {
                     translation = translation,
                     book = book,
                     chapter = chapter,
-                    padding = inner,
-                    onBack = { navController.navigateUp() }
+                    padding = inner
                 )
             }
         }
