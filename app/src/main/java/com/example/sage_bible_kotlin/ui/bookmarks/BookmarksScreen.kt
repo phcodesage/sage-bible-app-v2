@@ -29,7 +29,7 @@ import androidx.compose.ui.unit.dp
 import com.example.sage_bible_kotlin.data.BookmarkRepository
 
 @Composable
-fun BookmarksScreen(padding: PaddingValues, onOpenReader: (translation: String, book: String, chapter: Int) -> Unit) {
+fun BookmarksScreen(padding: PaddingValues, onOpenReader: (translation: String, book: String, chapter: Int, verse: Int) -> Unit) {
     val context = LocalContext.current
     var bookmarks by remember { mutableStateOf(BookmarkRepository.list(context)) }
 
@@ -50,7 +50,7 @@ fun BookmarksScreen(padding: PaddingValues, onOpenReader: (translation: String, 
                         Row(
                             modifier = Modifier
                                 .fillMaxWidth()
-                                .clickable { onOpenReader(b.translation, b.book, b.chapter) }
+                                .clickable { onOpenReader(b.translation, b.book, b.chapter, b.verse) }
                                 .padding(12.dp)
                         ) {
                             Column(modifier = Modifier.weight(1f)) {

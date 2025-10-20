@@ -59,7 +59,6 @@ fun HomeScreen(
     var selectedBook by remember { mutableStateOf<String?>(null) }
     var selectedChapter by remember { mutableStateOf<Int?>(null) }
     var testamentTab by remember { mutableStateOf(0) } // 0 = OT, 1 = NT
-    var openedDefault by remember { mutableStateOf(false) }
 
     var isLoading by remember { mutableStateOf(false) }
     LaunchedEffect(translation) {
@@ -70,12 +69,7 @@ fun HomeScreen(
         isLoading = false
     }
 
-    LaunchedEffect(bibleData) {
-        if (!openedDefault && bibleData != null) {
-            openedDefault = true
-            onOpenReader(translation.name, "Genesis", 1)
-        }
-    }
+    // Removed auto-open of Reader; the Bible tab now navigates directly to Reader.
 
     val allBooks = remember(bibleData) { bibleData?.books?.map { it.name }.orEmpty() }
     val otSet = remember { oldTestamentBooks.toSet() }

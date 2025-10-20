@@ -48,6 +48,7 @@ import com.example.sage_bible_kotlin.data.BibleData
 import com.example.sage_bible_kotlin.data.BibleRepository
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
+import kotlinx.coroutines.delay
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -55,7 +56,8 @@ fun ReaderScreen(
     translation: String,
     book: String,
     chapter: Int,
-    padding: PaddingValues
+    padding: PaddingValues,
+    initialVerse: Int? = null
 ) {
     val context = LocalContext.current
     val repo = remember { BibleRepository(context) }
@@ -79,11 +81,21 @@ fun ReaderScreen(
 
     val listState = rememberLazyListState()
     var pendingScrollToVerse by remember { mutableStateOf<Int?>(null) }
+    var flashVerse by remember { mutableStateOf<Int?>(null) }
     LaunchedEffect(pendingScrollToVerse) {
         pendingScrollToVerse?.let { v ->
             val index = (v - 1).coerceAtLeast(0)
             listState.scrollToItem(index)
             pendingScrollToVerse = null
+        }
+    }
+
+    LaunchedEffect(initialVerse, currentBook, currentChapter) {
+        if (initialVerse != null) {
+            pendingScrollToVerse = initialVerse
+            flashVerse = initialVerse
+            delay(1200)
+            flashVerse = null
         }
     }
 
@@ -100,30 +112,6 @@ fun ReaderScreen(
                     IconButton(onClick = { showPicker = true }) {
                         Icon(Icons.Filled.Tune, contentDescription = "Go to")
                     }
-                    IconButton(
-                        onClick = {
-                            if (bibleData != null) {
-                                val chapters = repo.getChapters(bibleData!!, currentBook)
-                                val idx = chapters.indexOf(currentChapter)
-                                if (idx > 0) {
-                                    currentChapter = chapters[idx - 1]
-                                    pendingScrollToVerse = 1
-                                }
-                            }
-                        }
-                    ) { Icon(Icons.Filled.ChevronLeft, contentDescription = "Previous Chapter") }
-                    IconButton(
-                        onClick = {
-                            if (bibleData != null) {
-                                val chapters = repo.getChapters(bibleData!!, currentBook)
-                                val idx = chapters.indexOf(currentChapter)
-                                if (idx >= 0 && idx < chapters.lastIndex) {
-                                    currentChapter = chapters[idx + 1]
-                                    pendingScrollToVerse = 1
-                                }
-                            }
-                        }
-                    ) { Icon(Icons.Filled.ChevronRight, contentDescription = "Next Chapter") }
                 }
             )
         }
@@ -133,12 +121,12 @@ fun ReaderScreen(
                 .padding(inner)
                 .padding(padding)
                 .fillMaxSize()
-                .padding(horizontal = 16.dp, vertical = 8.dp),
-            verticalArrangement = Arrangement.spacedBy(12.dp)
+                .padding(horizontal = 8.dp).padding(top = 0.dp, bottom = 2.dp),
+            verticalArrangement = Arrangement.spacedBy(4.dp)
         ) {
             Text(
                 text = buildSectionTitle(currentBook, currentChapter),
-                style = MaterialTheme.typography.titleLarge,
+                style = MaterialTheme.typography.titleSmall,
                 modifier = Modifier.fillMaxWidth(),
                 textAlign = TextAlign.Center
             )
@@ -155,9 +143,11 @@ fun ReaderScreen(
                 )
             } else {
                 LazyColumn(
-                    modifier = Modifier.fillMaxSize(),
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .weight(1f),
                     state = listState,
-                    verticalArrangement = Arrangement.spacedBy(8.dp)
+                    verticalArrangement = Arrangement.spacedBy(4.dp)
                 ) {
                     items(chapterContent.verses) { v ->
                         VerseInteractiveRow(
@@ -165,8 +155,47 @@ fun ReaderScreen(
                             text = v.text,
                             book = currentBook,
                             chapter = currentChapter,
-                            translationLabel = currentTranslation.label
+                            translationLabel = currentTranslation.label,
+                            flash = flashVerse == v.verse
                         )
+                    }
+                }
+                // Bottom navigation for previous/next chapters
+                val chapters = repo.getChapters(bibleData!!, currentBook)
+                val idx = chapters.indexOf(currentChapter)
+                val prevChapter = if (idx > 0) chapters[idx - 1] else null
+                val nextChapter = if (idx >= 0 && idx < chapters.lastIndex) chapters[idx + 1] else null
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(top = 0.dp),
+                    horizontalArrangement = Arrangement.SpaceBetween
+                ) {
+                    Button(
+                        onClick = {
+                            prevChapter?.let {
+                                currentChapter = it
+                                pendingScrollToVerse = 1
+                            }
+                        },
+                        enabled = prevChapter != null,
+                        contentPadding = androidx.compose.foundation.layout.PaddingValues(horizontal = 6.dp, vertical = 4.dp)
+                    ) {
+                        Icon(Icons.Filled.ChevronLeft, contentDescription = "Previous Chapter")
+                        Text(text = prevChapter?.toString() ?: "—", modifier = Modifier.padding(start = 4.dp))
+                    }
+                    Button(
+                        onClick = {
+                            nextChapter?.let {
+                                currentChapter = it
+                                pendingScrollToVerse = 1
+                            }
+                        },
+                        enabled = nextChapter != null,
+                        contentPadding = androidx.compose.foundation.layout.PaddingValues(horizontal = 6.dp, vertical = 4.dp)
+                    ) {
+                        Text(text = nextChapter?.toString() ?: "—", modifier = Modifier.padding(end = 4.dp))
+                        Icon(Icons.Filled.ChevronRight, contentDescription = "Next Chapter")
                     }
                 }
             }

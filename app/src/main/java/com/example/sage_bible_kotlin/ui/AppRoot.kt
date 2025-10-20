@@ -44,9 +44,11 @@ object Routes {
     const val Search = "search"
     const val Ai = "ai"
     const val Profile = "profile"
-    const val Reader = "reader/{translation}/{book}/{chapter}"
-    fun readerOf(translation: String, book: String, chapter: Int): String =
-        "reader/${URLEncoder.encode(translation, Charsets.UTF_8)}/${URLEncoder.encode(book, Charsets.UTF_8)}/$chapter"
+    const val Reader = "reader/{translation}/{book}/{chapter}?verse={verse}"
+    fun readerOf(translation: String, book: String, chapter: Int, verse: Int? = null): String {
+        val base = "reader/${URLEncoder.encode(translation, Charsets.UTF_8)}/${URLEncoder.encode(book, Charsets.UTF_8)}/$chapter"
+        return if (verse != null && verse > 0) "$base?verse=$verse" else base
+    }
 }
 
 data class BottomItem(val route: String, val label: String, val icon: ImageVector)
@@ -72,7 +74,10 @@ fun AppRoot() {
                     NavigationBarItem(
                         selected = currentDestination.isTopLevelSelected(item.route),
                         onClick = {
-                            navController.navigate(item.route) {
+                            val targetRoute = if (item.route == Routes.Bible) {
+                                Routes.readerOf("KJV", "Genesis", 1)
+                            } else item.route
+                            navController.navigate(targetRoute) {
                                 popUpTo(navController.graph.startDestinationId) { saveState = true }
                                 launchSingleTop = true
                                 restoreState = true
@@ -104,9 +109,12 @@ fun AppRoot() {
                 }
             }
             composable(Routes.Bookmarks) {
-                BookmarksScreen(padding = inner) { translation, book, chapter ->
-                    navController.navigate(Routes.readerOf(translation, book, chapter))
-                }
+                BookmarksScreen(
+                    padding = inner,
+                    onOpenReader = { translation: String, book: String, chapter: Int, verse: Int ->
+                        navController.navigate(Routes.readerOf(translation, book, chapter, verse))
+                    }
+                )
             }
             composable(Routes.Feed) { FeedScreen(padding = inner) }
             composable(Routes.Search) { SearchScreen(padding = inner) }
@@ -117,17 +125,20 @@ fun AppRoot() {
                 arguments = listOf(
                     navArgument("translation") { type = NavType.StringType },
                     navArgument("book") { type = NavType.StringType },
-                    navArgument("chapter") { type = NavType.IntType }
+                    navArgument("chapter") { type = NavType.IntType },
+                    navArgument("verse") { type = NavType.IntType; defaultValue = -1 }
                 )
             ) { backStackEntry ->
-                val translation = URLDecoder.decode(backStackEntry.arguments?.getString("translation").orEmpty(), Charsets.UTF_8)
-                val book = URLDecoder.decode(backStackEntry.arguments?.getString("book").orEmpty(), Charsets.UTF_8)
+                val translation = URLDecoder.decode(backStackEntry.arguments?.getString("translation") ?: "KJV", Charsets.UTF_8)
+                val book = URLDecoder.decode(backStackEntry.arguments?.getString("book") ?: "Genesis", Charsets.UTF_8)
                 val chapter = backStackEntry.arguments?.getInt("chapter") ?: 1
+                val verseArg = backStackEntry.arguments?.getInt("verse")?.takeIf { it > 0 }
                 ReaderScreen(
-                    translation = translation,
-                    book = book,
-                    chapter = chapter,
-                    padding = inner
+                    translation,
+                    book,
+                    chapter,
+                    inner,
+                    verseArg
                 )
             }
         }
@@ -135,4 +146,6 @@ fun AppRoot() {
 }
 
 private fun NavDestination?.isTopLevelSelected(route: String): Boolean =
-    this?.hierarchy?.any { it.route == route } == true
+    this?.hierarchy?.any {
+        it.route == route || (route == Routes.Bible && it.route == Routes.Reader)
+    } == true

@@ -18,13 +18,17 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.FlowRow
+import androidx.compose.foundation.layout.ExperimentalLayoutApi
 import androidx.compose.material3.Button
+import androidx.compose.material3.Icon
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.material3.SheetState
 import androidx.compose.material3.Text
 import androidx.compose.material3.rememberModalBottomSheetState
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Bookmark
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -41,14 +45,15 @@ import com.example.sage_bible_kotlin.data.BookmarkRepository
 import com.example.sage_bible_kotlin.data.HighlightRepository
 import androidx.compose.ui.graphics.Color
 
-@OptIn(ExperimentalMaterial3Api::class)
+@OptIn(ExperimentalMaterial3Api::class, ExperimentalLayoutApi::class)
 @Composable
 fun VerseInteractiveRow(
     number: Int,
     text: String,
     book: String,
     chapter: Int,
-    translationLabel: String
+    translationLabel: String,
+    flash: Boolean = false
 ) {
     val context = LocalContext.current
     @Suppress("DEPRECATION")
@@ -57,6 +62,13 @@ fun VerseInteractiveRow(
     val sheetState: SheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
     var highlightHex by remember(context, translationLabel, book, chapter, number) {
         mutableStateOf(HighlightRepository.get(context, translationLabel, book, chapter, number))
+    }
+    var isBookmarked by remember(context, translationLabel, book, chapter, number) {
+        mutableStateOf(
+            BookmarkRepository.list(context).any {
+                it.translation == translationLabel && it.book == book && it.chapter == chapter && it.verse == number
+            }
+        )
     }
 
     Row(
@@ -67,7 +79,11 @@ fun VerseInteractiveRow(
                 onLongClick = { showActions = true }
             )
             .background(
-                color = if (highlightHex != null) Color(AndroidColor.parseColor(highlightHex)) else Color.Transparent
+                color = when {
+                    highlightHex != null -> Color(AndroidColor.parseColor(highlightHex))
+                    flash -> Color(AndroidColor.parseColor("#99FFF59D")) // temporary glow-like background
+                    else -> Color.Transparent
+                }
             )
             .padding(vertical = 4.dp)
     ) {
@@ -82,6 +98,17 @@ fun VerseInteractiveRow(
             maxLines = Int.MAX_VALUE,
             overflow = TextOverflow.Visible
         )
+        androidx.compose.foundation.layout.Spacer(modifier = Modifier.weight(1f))
+        if (isBookmarked) {
+            Icon(
+                imageVector = Icons.Filled.Bookmark,
+                contentDescription = "Bookmarked",
+                tint = MaterialTheme.colorScheme.primary,
+                modifier = Modifier
+                    .padding(start = 8.dp)
+                    .size(16.dp)
+            )
+        }
     }
 
     if (showActions) {
@@ -92,19 +119,22 @@ fun VerseInteractiveRow(
                     style = MaterialTheme.typography.titleMedium
                 )
                 Text("Highlight", style = MaterialTheme.typography.labelLarge, color = MaterialTheme.colorScheme.primary)
-                FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                    val palette = listOf(
-                        "#66FFF59D", // yellow (alpha 0x66)
-                        "#66A5D6A7", // green
-                        "#6690CAF9", // blue
-                        "#66F48FB1", // teal
-                        "#66FFAB91", // orange
-                        "#66CE93D8"  // purple
-                    )
+                val palette = listOf(
+                    "#66FFF59D", // yellow (alpha 0x66)
+                    "#66A5D6A7", // green
+                    "#6690CAF9", // blue
+                    "#66F48FB1", // teal
+                    "#66FFAB91", // orange
+                    "#66CE93D8"  // purple
+                )
+                FlowRow(
+                    horizontalArrangement = Arrangement.spacedBy(8.dp),
+                    verticalArrangement = Arrangement.spacedBy(8.dp)
+                ) {
                     palette.forEach { hex ->
                         Row(
                             modifier = Modifier
-                                .size(36.dp)
+                                .size(44.dp)
                                 .background(Color(AndroidColor.parseColor(hex)), shape = MaterialTheme.shapes.small)
                                 .combinedClickable(
                                     onClick = {
@@ -116,49 +146,73 @@ fun VerseInteractiveRow(
                                 )
                         ) {}
                     }
-                    if (highlightHex != null) {
-                        Button(onClick = {
-                            HighlightRepository.remove(context, translationLabel, book, chapter, number)
-                            highlightHex = null
-                            showActions = false
-                        }) { Text("Remove highlight") }
-                    }
                 }
-                Button(onClick = {
-                    BookmarkRepository.add(
-                        context,
-                        BookmarkRepository.Bookmark(
-                            translation = translationLabel,
-                            book = book,
-                            chapter = chapter,
-                            verse = number,
-                            text = text.trim(),
-                            timestamp = System.currentTimeMillis()
-                        )
-                    )
-                    showActions = false
-                }) { Text("Bookmark") }
-                Button(onClick = {
-                    val payload = "$book $chapter:$number (${translationLabel})\n\n${text.trim()}"
-                    @Suppress("DEPRECATION")
-                    clipboard.setText(AnnotatedString(payload))
-                    showActions = false
-                }) { Text("Copy (with reference)") }
-                Button(onClick = {
-                    val ref = "$book $chapter:$number (${translationLabel})"
-                    @Suppress("DEPRECATION")
-                    clipboard.setText(AnnotatedString(ref))
-                    showActions = false
-                }) { Text("Copy reference only") }
-                Button(onClick = {
-                    val shareIntent = Intent(Intent.ACTION_SEND).apply {
-                        type = "text/plain"
-                        putExtra(Intent.EXTRA_TEXT, "$book $chapter:$number (${translationLabel})\n\n${text.trim()}")
+                if (highlightHex != null) {
+                    Button(onClick = {
+                        HighlightRepository.remove(context, translationLabel, book, chapter, number)
+                        highlightHex = null
+                        showActions = false
+                    }) { Text("Remove highlight") }
+                }
+
+                FlowRow(
+                    horizontalArrangement = Arrangement.spacedBy(8.dp),
+                    verticalArrangement = Arrangement.spacedBy(8.dp)
+                ) {
+                    if (!isBookmarked) {
+                        Button(onClick = {
+                            BookmarkRepository.add(
+                                context,
+                                BookmarkRepository.Bookmark(
+                                    translation = translationLabel,
+                                    book = book,
+                                    chapter = chapter,
+                                    verse = number,
+                                    text = text.trim(),
+                                    timestamp = System.currentTimeMillis()
+                                )
+                            )
+                            isBookmarked = true
+                            showActions = false
+                        }) { Text("Bookmark") }
+                    } else {
+                        Button(onClick = {
+                            val existing = BookmarkRepository.list(context).firstOrNull {
+                                it.translation == translationLabel && it.book == book && it.chapter == chapter && it.verse == number
+                            }
+                            if (existing != null) {
+                                BookmarkRepository.remove(context, existing)
+                                isBookmarked = false
+                            }
+                            showActions = false
+                        }) { Text("Remove bookmark") }
                     }
-                    context.startActivity(Intent.createChooser(shareIntent, "Share verse"))
-                    showActions = false
-                }) { Text("Share") }
-                Button(onClick = { showActions = false }) { Text("Close") }
+
+                    Button(onClick = {
+                        val payload = "$book $chapter:$number (${translationLabel})\n\n${text.trim()}"
+                        @Suppress("DEPRECATION")
+                        clipboard.setText(AnnotatedString(payload))
+                        showActions = false
+                    }) { Text("Copy (with reference)") }
+
+                    Button(onClick = {
+                        val ref = "$book $chapter:$number (${translationLabel})"
+                        @Suppress("DEPRECATION")
+                        clipboard.setText(AnnotatedString(ref))
+                        showActions = false
+                    }) { Text("Copy reference only") }
+
+                    Button(onClick = {
+                        val shareIntent = Intent(Intent.ACTION_SEND).apply {
+                            type = "text/plain"
+                            putExtra(Intent.EXTRA_TEXT, "$book $chapter:$number (${translationLabel})\n\n${text.trim()}")
+                        }
+                        context.startActivity(Intent.createChooser(shareIntent, "Share verse"))
+                        showActions = false
+                    }) { Text("Share") }
+
+                    Button(onClick = { showActions = false }) { Text("Close") }
+                }
             }
         }
     }
