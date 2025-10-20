@@ -105,7 +105,10 @@ fun ReaderScreen(
                             if (bibleData != null) {
                                 val chapters = repo.getChapters(bibleData!!, currentBook)
                                 val idx = chapters.indexOf(currentChapter)
-                                if (idx > 0) currentChapter = chapters[idx - 1]
+                                if (idx > 0) {
+                                    currentChapter = chapters[idx - 1]
+                                    pendingScrollToVerse = 1
+                                }
                             }
                         }
                     ) { Icon(Icons.Filled.ChevronLeft, contentDescription = "Previous Chapter") }
@@ -114,7 +117,10 @@ fun ReaderScreen(
                             if (bibleData != null) {
                                 val chapters = repo.getChapters(bibleData!!, currentBook)
                                 val idx = chapters.indexOf(currentChapter)
-                                if (idx >= 0 && idx < chapters.lastIndex) currentChapter = chapters[idx + 1]
+                                if (idx >= 0 && idx < chapters.lastIndex) {
+                                    currentChapter = chapters[idx + 1]
+                                    pendingScrollToVerse = 1
+                                }
                             }
                         }
                     ) { Icon(Icons.Filled.ChevronRight, contentDescription = "Next Chapter") }

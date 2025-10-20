@@ -2,12 +2,22 @@
 package com.example.sage_bible_kotlin.ui.reader
 
 import android.content.Intent
+import android.graphics.Color as AndroidColor
 import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.wrapContentHeight
+import androidx.compose.foundation.layout.wrapContentWidth
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxHeight
+import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.background
+import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.material3.Button
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.MaterialTheme
@@ -28,6 +38,8 @@ import androidx.compose.ui.text.AnnotatedString
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import com.example.sage_bible_kotlin.data.BookmarkRepository
+import com.example.sage_bible_kotlin.data.HighlightRepository
+import androidx.compose.ui.graphics.Color
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -43,6 +55,9 @@ fun VerseInteractiveRow(
     val clipboard: ClipboardManager = LocalClipboardManager.current
     var showActions by remember { mutableStateOf(false) }
     val sheetState: SheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
+    var highlightHex by remember(context, translationLabel, book, chapter, number) {
+        mutableStateOf(HighlightRepository.get(context, translationLabel, book, chapter, number))
+    }
 
     Row(
         modifier = Modifier
@@ -50,6 +65,9 @@ fun VerseInteractiveRow(
             .combinedClickable(
                 onClick = {},
                 onLongClick = { showActions = true }
+            )
+            .background(
+                color = if (highlightHex != null) Color(AndroidColor.parseColor(highlightHex)) else Color.Transparent
             )
             .padding(vertical = 4.dp)
     ) {
@@ -73,6 +91,39 @@ fun VerseInteractiveRow(
                     text = "$book $chapter:$number (${translationLabel})",
                     style = MaterialTheme.typography.titleMedium
                 )
+                Text("Highlight", style = MaterialTheme.typography.labelLarge, color = MaterialTheme.colorScheme.primary)
+                FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                    val palette = listOf(
+                        "#66FFF59D", // yellow (alpha 0x66)
+                        "#66A5D6A7", // green
+                        "#6690CAF9", // blue
+                        "#66F48FB1", // teal
+                        "#66FFAB91", // orange
+                        "#66CE93D8"  // purple
+                    )
+                    palette.forEach { hex ->
+                        Row(
+                            modifier = Modifier
+                                .size(36.dp)
+                                .background(Color(AndroidColor.parseColor(hex)), shape = MaterialTheme.shapes.small)
+                                .combinedClickable(
+                                    onClick = {
+                                        HighlightRepository.set(context, translationLabel, book, chapter, number, hex)
+                                        highlightHex = hex
+                                        showActions = false
+                                    },
+                                    onLongClick = {}
+                                )
+                        ) {}
+                    }
+                    if (highlightHex != null) {
+                        Button(onClick = {
+                            HighlightRepository.remove(context, translationLabel, book, chapter, number)
+                            highlightHex = null
+                            showActions = false
+                        }) { Text("Remove highlight") }
+                    }
+                }
                 Button(onClick = {
                     BookmarkRepository.add(
                         context,
