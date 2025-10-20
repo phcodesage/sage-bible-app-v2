@@ -71,9 +71,9 @@ fun ReaderPassagePickerSheet(
                     SelectorRow(label = "Book", value = book) { mode = PickerMode.Book }
                     SelectorRow(label = "Chapter", value = chapter.toString()) { mode = PickerMode.Chapter }
                     SelectorRow(label = "Verse (optional)", value = verse?.toString() ?: "") { mode = PickerMode.Verse }
-                    Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-                        Button(onClick = onDismiss) { Text("Cancel") }
+                    Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
                         Button(onClick = { onConfirm(translation, book, chapter, verse) }) { Text("Go") }
+                        Button(onClick = onDismiss) { Text("Cancel") }
                     }
                 }
             }
@@ -143,9 +143,9 @@ private fun FullListPanel(
     onSelect: (String) -> Unit
 ) {
     Column(modifier = Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
-        Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-            TextButton(onClick = onBack) { Text("Back") }
+        Row(horizontalArrangement = Arrangement.SpaceBetween, modifier = Modifier.fillMaxWidth()) {
             Text(text = title, style = MaterialTheme.typography.titleMedium)
+            TextButton(onClick = onBack) { Text("Back") }
         }
         LazyVerticalGrid(
             columns = GridCells.Adaptive(minSize = 72.dp),
