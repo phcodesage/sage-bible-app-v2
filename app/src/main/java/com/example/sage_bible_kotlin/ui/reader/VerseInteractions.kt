@@ -27,6 +27,7 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.AnnotatedString
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
+import com.example.sage_bible_kotlin.data.BookmarkRepository
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -72,6 +73,20 @@ fun VerseInteractiveRow(
                     text = "$book $chapter:$number (${translationLabel})",
                     style = MaterialTheme.typography.titleMedium
                 )
+                Button(onClick = {
+                    BookmarkRepository.add(
+                        context,
+                        BookmarkRepository.Bookmark(
+                            translation = translationLabel,
+                            book = book,
+                            chapter = chapter,
+                            verse = number,
+                            text = text.trim(),
+                            timestamp = System.currentTimeMillis()
+                        )
+                    )
+                    showActions = false
+                }) { Text("Bookmark") }
                 Button(onClick = {
                     val payload = "$book $chapter:$number (${translationLabel})\n\n${text.trim()}"
                     @Suppress("DEPRECATION")

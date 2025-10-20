@@ -23,6 +23,7 @@ import com.example.sage_bible_kotlin.ui.placeholders.SearchScreen
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ImportContacts
 import androidx.compose.material.icons.filled.Home
+import androidx.compose.material.icons.filled.Bookmark
 import androidx.compose.material.icons.filled.Person
 import androidx.compose.material.icons.filled.Search
 import androidx.compose.material.icons.filled.SmartToy
@@ -33,11 +34,13 @@ import java.net.URLEncoder
 import com.example.sage_bible_kotlin.ui.reader.ReaderScreen
 import com.example.sage_bible_kotlin.ui.feed.FeedScreen
 import com.example.sage_bible_kotlin.ui.splash.SplashScreen
+import com.example.sage_bible_kotlin.ui.bookmarks.BookmarksScreen
 
 object Routes {
     const val Splash = "splash"
     const val Bible = "bible"
     const val Feed = "feed"
+    const val Bookmarks = "bookmarks"
     const val Search = "search"
     const val Ai = "ai"
     const val Profile = "profile"
@@ -54,6 +57,7 @@ fun AppRoot() {
     val items = listOf(
         BottomItem(Routes.Bible, "Bible", Icons.Filled.ImportContacts),
         BottomItem(Routes.Feed, "Home", Icons.Filled.Home),
+        BottomItem(Routes.Bookmarks, "Bookmarks", Icons.Filled.Bookmark),
         BottomItem(Routes.Search, "Search", Icons.Filled.Search),
         BottomItem(Routes.Ai, "AI", Icons.Filled.SmartToy),
         BottomItem(Routes.Profile, "Profile", Icons.Filled.Person),
@@ -96,6 +100,11 @@ fun AppRoot() {
             }
             composable(Routes.Bible) {
                 HomeScreen(padding = inner) { translation, book, chapter ->
+                    navController.navigate(Routes.readerOf(translation, book, chapter))
+                }
+            }
+            composable(Routes.Bookmarks) {
+                BookmarksScreen(padding = inner) { translation, book, chapter ->
                     navController.navigate(Routes.readerOf(translation, book, chapter))
                 }
             }
