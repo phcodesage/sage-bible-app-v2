@@ -46,6 +46,7 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import com.example.sage_bible_kotlin.data.BibleData
 import com.example.sage_bible_kotlin.data.BibleRepository
+import com.example.sage_bible_kotlin.data.ReadingPositionRepository
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import kotlinx.coroutines.delay
@@ -75,11 +76,35 @@ fun ReaderScreen(
         isLoading = false
     }
 
+    // Save reading position whenever translation, book, or chapter changes
+    LaunchedEffect(currentTranslation, currentBook, currentChapter) {
+        val position = ReadingPositionRepository.ReadingPosition(
+            translation = currentTranslation.name,
+            book = currentBook,
+            chapter = currentChapter
+        )
+        ReadingPositionRepository.save(context, position)
+    }
+
     val chapterContent = remember(bibleData, currentBook, currentChapter) {
         if (bibleData != null) repo.getChapterContent(bibleData!!, currentBook, currentChapter) else null
     }
 
     val listState = rememberLazyListState()
+    
+    // Save current verse position based on scroll state
+    LaunchedEffect(listState.firstVisibleItemIndex) {
+        if (chapterContent != null && listState.firstVisibleItemIndex >= 0) {
+            val currentVerse = (listState.firstVisibleItemIndex + 1).coerceAtMost(chapterContent.verses.size)
+            val position = ReadingPositionRepository.ReadingPosition(
+                translation = currentTranslation.name,
+                book = currentBook,
+                chapter = currentChapter,
+                verse = currentVerse
+            )
+            ReadingPositionRepository.save(context, position)
+        }
+    }
     var pendingScrollToVerse by remember { mutableStateOf<Int?>(null) }
     var flashVerse by remember { mutableStateOf<Int?>(null) }
     LaunchedEffect(pendingScrollToVerse) {
@@ -96,6 +121,16 @@ fun ReaderScreen(
             flashVerse = initialVerse
             delay(1200)
             flashVerse = null
+        } else {
+            // If no specific verse is provided, try to restore saved position
+            val savedPosition = ReadingPositionRepository.load(context)
+            if (savedPosition != null && 
+                savedPosition.translation == currentTranslation.name &&
+                savedPosition.book == currentBook &&
+                savedPosition.chapter == currentChapter &&
+                savedPosition.verse != null) {
+                pendingScrollToVerse = savedPosition.verse
+            }
         }
     }
 

@@ -35,6 +35,8 @@ import com.example.sage_bible_kotlin.ui.reader.ReaderScreen
 import com.example.sage_bible_kotlin.ui.feed.FeedScreen
 import com.example.sage_bible_kotlin.ui.splash.SplashScreen
 import com.example.sage_bible_kotlin.ui.bookmarks.BookmarksScreen
+import com.example.sage_bible_kotlin.data.ReadingPositionRepository
+import androidx.compose.ui.platform.LocalContext
 
 object Routes {
     const val Splash = "splash"
@@ -56,6 +58,7 @@ data class BottomItem(val route: String, val label: String, val icon: ImageVecto
 @Composable
 fun AppRoot() {
     val navController = rememberNavController()
+    val context = LocalContext.current
     val items = listOf(
         BottomItem(Routes.Bible, "Bible", Icons.Filled.ImportContacts),
         BottomItem(Routes.Feed, "Home", Icons.Filled.Home),
@@ -75,7 +78,9 @@ fun AppRoot() {
                         selected = currentDestination.isTopLevelSelected(item.route),
                         onClick = {
                             val targetRoute = if (item.route == Routes.Bible) {
-                                Routes.readerOf("KJV", "Genesis", 1)
+                                val savedPosition = ReadingPositionRepository.load(context)
+                                    ?: ReadingPositionRepository.getDefaultPosition()
+                                Routes.readerOf(savedPosition.translation, savedPosition.book, savedPosition.chapter, savedPosition.verse)
                             } else item.route
                             navController.navigate(targetRoute) {
                                 popUpTo(navController.graph.startDestinationId) { saveState = true }
@@ -98,7 +103,9 @@ fun AppRoot() {
             composable(Routes.Splash) {
                 SplashScreen(padding = inner)
                 LaunchedEffect(Unit) {
-                    navController.navigate(Routes.readerOf("KJV", "Genesis", 1)) {
+                    val savedPosition = ReadingPositionRepository.load(context)
+                        ?: ReadingPositionRepository.getDefaultPosition()
+                    navController.navigate(Routes.readerOf(savedPosition.translation, savedPosition.book, savedPosition.chapter, savedPosition.verse)) {
                         popUpTo(Routes.Splash) { inclusive = true }
                     }
                 }
