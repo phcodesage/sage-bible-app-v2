@@ -72,8 +72,8 @@ fun ReaderPassagePickerSheet(
                     SelectorRow(label = "Chapter", value = chapter.toString()) { mode = PickerMode.Chapter }
                     SelectorRow(label = "Verse (optional)", value = verse?.toString() ?: "") { mode = PickerMode.Verse }
                     Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
-                        Button(onClick = { onConfirm(translation, book, chapter, verse) }) { Text("Go") }
                         Button(onClick = onDismiss) { Text("Cancel") }
+                        Button(onClick = { onConfirm(translation, book, chapter, verse) }) { Text("Go") }
                     }
                 }
             }
